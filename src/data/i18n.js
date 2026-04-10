@@ -130,14 +130,14 @@ export const i18n = {
       zh: '您的姓名',
     },
     fromPlaceholder: {
-      en: 'Kuala Lumpur, Malaysia',
-      bm: 'Kuala Lumpur, Malaysia',
-      zh: '吉隆坡，马来西亚',
+      en: 'e.g. Selangor, Malaysia',
+      bm: 'cth. Selangor, Malaysia',
+      zh: '例如：雪兰莪，马来西亚',
     },
     fromLabel: {
-      en: 'From',
-      bm: 'Dari',
-      zh: '来自',
+      en: 'State / Country',
+      bm: 'Negeri / Negara',
+      zh: '州属 / 国家',
     },
     messageLabel: {
       en: 'Your Message',
