@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLang } from '../hooks/useLang';
 import { i18n, t } from '../data/i18n';
+import { CITIES } from '../data/cities';
 
 const API = '/api/tributes';
 
@@ -124,15 +125,25 @@ export default function Tribute() {
               />
             </div>
             <div className="tribute-field">
-              <label className="tribute-label">{t(i18n.tribute.fromLabel, lang)}</label>
+              <label className="tribute-label" htmlFor="tribute-from">
+                {t(i18n.tribute.fromLabel, lang)}
+              </label>
               <input
+                id="tribute-from"
                 type="text"
+                list="cities-list"
                 className="tribute-input"
                 placeholder={t(i18n.tribute.fromPlaceholder, lang)}
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
                 maxLength={80}
+                autoComplete="off"
               />
+              <datalist id="cities-list">
+                {CITIES.map((city) => (
+                  <option key={city} value={city} />
+                ))}
+              </datalist>
             </div>
           </div>
 
