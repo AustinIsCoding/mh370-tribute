@@ -128,22 +128,17 @@ export default function Tribute() {
               <label className="tribute-label" htmlFor="tribute-from">
                 {t(i18n.tribute.fromLabel, lang)}
               </label>
-              <input
+              <select
                 id="tribute-from"
-                type="text"
-                list="cities-list"
-                className="tribute-input"
-                placeholder={t(i18n.tribute.fromPlaceholder, lang)}
+                className="tribute-input tribute-select"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                maxLength={80}
-                autoComplete="off"
-              />
-              <datalist id="cities-list">
+              >
+                <option value="">{t(i18n.tribute.fromPlaceholder, lang)}</option>
                 {CITIES.map((city) => (
-                  <option key={city} value={city} />
+                  <option key={city} value={city}>{city}</option>
                 ))}
-              </datalist>
+              </select>
             </div>
           </div>
 

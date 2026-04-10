@@ -42,9 +42,9 @@ export default function Nav() {
         ))}
       </ul>
 
-      {/* Right side: lang switcher + hamburger */}
+      {/* Right side: lang switcher (desktop) + hamburger */}
       <div className="nav-right">
-        <div className="lang-switcher">
+        <div className="lang-switcher lang-switcher--desktop">
           {LANGS.map(({ code, label }) => (
             <button
               key={code}
@@ -83,6 +83,20 @@ export default function Nav() {
               </li>
             ))}
           </ul>
+          {/* Lang switcher inside drawer on mobile */}
+          <div className="lang-switcher lang-switcher--drawer">
+            {LANGS.map(({ code, label }) => (
+              <button
+                key={code}
+                onClick={() => setLang(code)}
+                className={`lang-btn${lang === code ? ' lang-btn--active' : ''}`}
+                aria-label={`Switch language to ${label}`}
+                aria-pressed={lang === code}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </nav>
