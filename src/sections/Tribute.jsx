@@ -1,58 +1,101 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLang } from '../hooks/useLang';
 import { i18n, t } from '../data/i18n';
-import { seededTributes } from '../data/tributes';
 
-let nextId = seededTributes.length + 1;
+const API = '/api/tributes';
+
+const LOADING_MSG = {
+  en: 'Loading tributes…',
+  bm: 'Memuatkan penghormatan…',
+  zh: '正在加载留言…',
+};
+const ERROR_MSG = {
+  en: 'Could not load tributes. Please refresh.',
+  bm: 'Gagal memuatkan penghormatan. Sila muat semula.',
+  zh: '无法加载留言，请刷新页面。',
+};
+const SUBMIT_ERROR_MSG = {
+  en: 'Failed to submit. Please try again.',
+  bm: 'Gagal menghantar. Sila cuba lagi.',
+  zh: '提交失败，请重试。',
+};
 
 export default function Tribute() {
   const { lang } = useLang();
-  const [name, setName]       = useState('');
-  const [from, setFrom]       = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError]     = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [tributes, setTributes] = useState(seededTributes);
 
-  // Track which card ids are "new" so we apply the popIn animation
-  const [newIds, setNewIds] = useState(new Set());
+  // Form state
+  const [name,    setName]    = useState('');
+  const [from,    setFrom]    = useState('');
+  const [message, setMessage] = useState('');
+  const [fieldErr,  setFieldErr]  = useState(false);
+  const [submitErr, setSubmitErr] = useState(false);
+  const [success,   setSuccess]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Data state
+  const [tributes, setTributes] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [fetchErr, setFetchErr] = useState(false);
+
+  // Animate new card
+  const [newId, setNewId] = useState(null);
   const gridRef = useRef(null);
 
-  // Clear the "new" flag after animation completes
+  // ── Fetch on mount ───────────────────────────────────
   useEffect(() => {
-    if (newIds.size === 0) return;
-    const timer = setTimeout(() => setNewIds(new Set()), 700);
-    return () => clearTimeout(timer);
-  }, [newIds]);
+    fetch(API)
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
+      .then(({ tributes }) => {
+        setTributes(tributes);
+        setLoading(false);
+      })
+      .catch(() => {
+        setFetchErr(true);
+        setLoading(false);
+      });
+  }, []);
 
-  function handleSubmit(e) {
+  // Clear new-card animation flag
+  useEffect(() => {
+    if (!newId) return;
+    const t = setTimeout(() => setNewId(null), 700);
+    return () => clearTimeout(t);
+  }, [newId]);
+
+  // ── Submit ───────────────────────────────────────────
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!message.trim()) {
-      setError(true);
-      return;
+    if (!message.trim()) { setFieldErr(true); return; }
+
+    setFieldErr(false);
+    setSubmitErr(false);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(API, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name, from, message }),
+      });
+      if (!res.ok) throw new Error(res.status);
+      const newTribute = await res.json();
+
+      setTributes((prev) => [newTribute, ...prev]);
+      setNewId(newTribute._id);
+      setName('');
+      setFrom('');
+      setMessage('');
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 4000);
+      setTimeout(() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    } catch {
+      setSubmitErr(true);
+    } finally {
+      setSubmitting(false);
     }
-    setError(false);
-
-    const id = nextId++;
-    const newTribute = {
-      id,
-      name: name.trim() || t(i18n.tribute.namePlaceholder, lang),
-      from: from.trim() || '',
-      message: message.trim(),
-    };
-
-    setTributes((prev) => [newTribute, ...prev]);
-    setNewIds(new Set([id]));
-    setName('');
-    setFrom('');
-    setMessage('');
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 4000);
-
-    // Scroll grid into view
-    setTimeout(() => {
-      gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
   }
 
   return (
@@ -67,12 +110,10 @@ export default function Tribute() {
       {/* Form panel */}
       <div className="tribute-form-panel">
         <form onSubmit={handleSubmit} noValidate className="tribute-form">
-          {/* Name + From row */}
+
           <div className="tribute-form-row">
             <div className="tribute-field">
-              <label className="tribute-label">
-                {t(i18n.tribute.nameLabel, lang)}
-              </label>
+              <label className="tribute-label">{t(i18n.tribute.nameLabel, lang)}</label>
               <input
                 type="text"
                 className="tribute-input"
@@ -83,9 +124,7 @@ export default function Tribute() {
               />
             </div>
             <div className="tribute-field">
-              <label className="tribute-label">
-                {t(i18n.tribute.fromLabel, lang)}
-              </label>
+              <label className="tribute-label">{t(i18n.tribute.fromLabel, lang)}</label>
               <input
                 type="text"
                 className="tribute-input"
@@ -97,54 +136,56 @@ export default function Tribute() {
             </div>
           </div>
 
-          {/* Message */}
           <div className="tribute-field">
-            <label className="tribute-label">
-              {t(i18n.tribute.messageLabel, lang)}
-            </label>
+            <label className="tribute-label">{t(i18n.tribute.messageLabel, lang)}</label>
             <textarea
-              className={`tribute-textarea${error ? ' tribute-textarea--error' : ''}`}
+              className={`tribute-textarea${fieldErr ? ' tribute-textarea--error' : ''}`}
               placeholder={t(i18n.tribute.messagePlaceholder, lang)}
               value={message}
-              onChange={(e) => { setMessage(e.target.value); setError(false); }}
+              onChange={(e) => { setMessage(e.target.value); setFieldErr(false); }}
               rows={4}
               maxLength={500}
             />
-            {error && (
+            {fieldErr && (
               <p className="tribute-error">{t(i18n.tribute.errorEmpty, lang)}</p>
             )}
           </div>
 
-          {/* Submit */}
           <div className="tribute-form-footer">
-            <button type="submit" className="tribute-submit">
-              {t(i18n.tribute.submit, lang)}
+            <button type="submit" className="tribute-submit" disabled={submitting}>
+              {submitting ? '…' : t(i18n.tribute.submit, lang)}
             </button>
-            {success && (
-              <p className="tribute-success">{t(i18n.tribute.successMsg, lang)}</p>
-            )}
+            {success   && <p className="tribute-success">{t(i18n.tribute.successMsg, lang)}</p>}
+            {submitErr && <p className="tribute-error">{t(SUBMIT_ERROR_MSG, lang)}</p>}
           </div>
+
         </form>
       </div>
 
       {/* Tribute grid */}
-      <div className="tribute-grid" ref={gridRef}>
-        {tributes.map((tribute) => (
-          <div
-            key={tribute.id}
-            className={`tribute-card${newIds.has(tribute.id) ? ' tribute-card--new' : ''}`}
-          >
-            <span className="tribute-candle" aria-hidden="true">🕯️</span>
-            <p className="tribute-message">"{tribute.message}"</p>
-            <p className="tribute-name">{tribute.name}</p>
-            {tribute.from && (
-              <p className="tribute-from">
-                <span aria-hidden="true">📍</span> {tribute.from}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <p className="tribute-status">{t(LOADING_MSG, lang)}</p>
+      ) : fetchErr ? (
+        <p className="tribute-status tribute-status--err">{t(ERROR_MSG, lang)}</p>
+      ) : (
+        <div className="tribute-grid" ref={gridRef}>
+          {tributes.map((tribute) => (
+            <div
+              key={String(tribute._id)}
+              className={`tribute-card${String(tribute._id) === String(newId) ? ' tribute-card--new' : ''}`}
+            >
+              <span className="tribute-candle" aria-hidden="true">🕯️</span>
+              <p className="tribute-message">"{tribute.message}"</p>
+              <p className="tribute-name">{tribute.name}</p>
+              {tribute.from && (
+                <p className="tribute-from">
+                  <span aria-hidden="true">📍</span> {tribute.from}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -1036,6 +1036,24 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* Loading / error status */
+.tribute-status {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: rgba(245, 240, 232, 0.4);
+  text-align: center;
+  padding: 2rem 0;
+}
+.tribute-status--err { color: #e07070; }
+
+/* Disabled submit */
+.tribute-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* ── Hero share button ────────────────────────────────── */
 .hero-share {
   font-family: var(--font-ui);
