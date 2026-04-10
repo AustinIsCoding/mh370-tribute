@@ -24,6 +24,15 @@ const SUBMIT_ERROR_MSG = {
 export default function Tribute() {
   const { lang } = useLang();
 
+  // Detect mobile for from-field input type
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   // Form state
   const [name,    setName]    = useState('');
   const [from,    setFrom]    = useState('');
@@ -128,17 +137,38 @@ export default function Tribute() {
               <label className="tribute-label" htmlFor="tribute-from">
                 {t(i18n.tribute.fromLabel, lang)}
               </label>
-              <select
-                id="tribute-from"
-                className="tribute-input tribute-select"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              >
-                <option value="">{t(i18n.tribute.fromPlaceholder, lang)}</option>
-                {CITIES.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
+              {isMobile ? (
+                <select
+                  id="tribute-from"
+                  className="tribute-input tribute-select"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                >
+                  <option value="">{t(i18n.tribute.fromPlaceholder, lang)}</option>
+                  {CITIES.map((city) => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              ) : (
+                <>
+                  <input
+                    id="tribute-from"
+                    type="text"
+                    list="cities-list"
+                    className="tribute-input"
+                    placeholder={t(i18n.tribute.fromPlaceholder, lang)}
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                    maxLength={80}
+                    autoComplete="off"
+                  />
+                  <datalist id="cities-list">
+                    {CITIES.map((city) => (
+                      <option key={city} value={city} />
+                    ))}
+                  </datalist>
+                </>
+              )}
             </div>
           </div>
 
