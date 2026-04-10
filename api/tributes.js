@@ -6,10 +6,9 @@ const uri = process.env.MONGODB_URI;
 let cachedClient = null;
 
 async function getDb() {
+  if (!uri) throw new Error('MONGODB_URI environment variable is not set.');
   if (cachedClient) return cachedClient.db('mh370tribute');
-  const client = new MongoClient(uri, {
-    serverSelectionTimeoutMS: 5000,
-  });
+  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 8000 });
   await client.connect();
   cachedClient = client;
   return client.db('mh370tribute');
@@ -28,7 +27,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const db = await getDb();
+    const db  = await getDb();
     const col = db.collection('tributes');
 
     // ── GET /api/tributes ──────────────────────────────
@@ -67,7 +66,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed.' });
 
   } catch (err) {
-    console.error('[/api/tributes]', err);
-    return res.status(500).json({ error: 'Server error. Please try again.' });
+    // Return the real error message in dev; keep it generic in prod
+    const isDev = process.env.NODE_ENV !== 'production';
+    console.error('[/api/tributes]', err.message);
+    return res.status(500).json({
+      error: 'Server error. Please try again.',
+      ...(isDev && { detail: err.message }),
+    });
   }
 }
